@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import pickle
+import pytz
 import os
 import re
 import requests
@@ -26,9 +27,9 @@ FIELDS = ["pressure","height","temp","dew_point","rel_humidity",
               "mix_ratio","direction", "knots","theta","theta_e","theta_v"]
 SOUNDING_HR = "12"
 URL_BASE="https://weather.uwyo.edu/cgi-bin/sounding"
-MODEL = "randomforest"
+MODEL = "xgboost"
 FACTOR = 1
-PCA = False
+PCA = True
 
 
 def get_session():
@@ -218,6 +219,7 @@ def save_to_s3(date, prediction, filename):
     bucket = os.getenv("AWS_BUCKET_NAME")
     key = f"{date.year}/{date.month}/{date.day}/{filename}"
     s3.upload_file(filename, bucket, key)
+    os.remove(filename)
 
 def get_prev_day_max_tempf(date, station="14", unit="F"):
     station = f"KNJATCO{station}"
@@ -243,16 +245,17 @@ def predict(data):
     return model.predict(data)[0]*FACTOR
 
 def main():
-    date = datetime.now().date() + timedelta(days=-1)
+    utc_date = datetime.utcnow().replace(tzinfo=pytz.utc)
+    date = utc_date.astimezone(pytz.timezone('US/Eastern')).date()
     prev_day = date + timedelta(days=-1)
     X = prep_prediction_data(date)
     prediction = predict(X)
     save_to_s3(date, prediction, "prediction.txt")
     prev_day_tempf = get_prev_day_max_tempf(prev_day)
-    save_to_s3(date, prev_day_tempf, "max_temp.txt")
+    save_to_s3(prev_day, prev_day_tempf, "max_temp.txt")
 
 
 if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='US/Eastern')
-    scheduler.add_job(main, 'cron', minute='0', hour='9', day='*', year='*', month='*')
+    scheduler.add_job(main, 'cron', minute='30', hour='9', day='*', year='*', month='*')
     scheduler.start()

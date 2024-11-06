@@ -1,18 +1,17 @@
-FROM ubuntu:latest
+#FROM ubuntu:20.04
+FROM python:3.10-slim
 
 RUN apt-get update \
-  && apt-get install -y python3-pip python3-dev libpq-dev unixodbc-dev \
-  && cd /usr/local/bin \
-  && ln -s /usr/bin/python3 python \
-  && pip3 install --upgrade pip
+  && apt-get install -y libpq-dev unixodbc-dev
 
 COPY ./requirements.txt /data/requirements.txt
 COPY ./main.py /data/main.py
-COPY ./config.json /data/config.json
+COPY ./artificats /data/artificats
 
 WORKDIR /data
 
-RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install -r requirements.txt
+RUN python -m pip install --upgrade pip
+RUN python -m pip install -r requirements.txt
+RUN python -m pip install --no-cache-dir numpy
 
 CMD ["python", "-u", "main.py"]
