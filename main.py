@@ -257,5 +257,5 @@ def main():
 
 if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='US/Eastern')
-    scheduler.add_job(main, 'cron', minute='15', hour='12', day='*', year='*', month='*')
+    scheduler.add_job(main, 'cron', minute='30', hour='9', day='*', year='*', month='*')
     scheduler.start()
