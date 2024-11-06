@@ -154,7 +154,7 @@ def get_observations(date, station="14"):
     url_date = url.format(station=station, date=dt, key=api_key)
     session = get_session()
     try:
-        resp = session.get(url_date)
+        resp = session.get(url_date, verify=False)
         obs = resp.json()['observations']
         session.close()
     except Exception as e:
@@ -229,7 +229,7 @@ def get_prev_day_max_tempf(date, station="14", unit="F"):
     url_date = url.format(station=station, date=dt, key=api_key)
     session = get_session()
     try:
-        resp = session.get(url_date)
+        resp = session.get(url_date, verify=False)
         obs = resp.json()['observations']
         session.close()
     except Exception as e:
