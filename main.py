@@ -248,9 +248,12 @@ def main():
     utc_date = datetime.utcnow().replace(tzinfo=pytz.utc)
     date = utc_date.astimezone(pytz.timezone('US/Eastern')).date()
     prev_day = date + timedelta(days=-1)
-    X = prep_prediction_data(date)
-    prediction = predict(X)
-    save_to_s3(date, prediction, "prediction.txt")
+    try:
+        X = prep_prediction_data(date)
+        prediction = predict(X)
+        save_to_s3(date, prediction, "prediction.txt")
+    except Exception as e:
+        pass
     prev_day_tempf = get_prev_day_max_tempf(prev_day)
     save_to_s3(prev_day, prev_day_tempf, "max_temp.txt")
 
