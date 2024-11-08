@@ -28,7 +28,7 @@ FIELDS = ["pressure","height","temp","dew_point","rel_humidity",
 SOUNDING_HR = "12"
 URL_BASE="https://weather.uwyo.edu/cgi-bin/sounding"
 MODEL = "randomforest"
-FACTOR = 1
+FACTOR = .99
 PCA = False
 
 
@@ -245,20 +245,37 @@ def predict(data):
     return model.predict(data)[0]*FACTOR
 
 def main():
-    utc_date = datetime.utcnow().replace(tzinfo=pytz.utc)
-    date = utc_date.astimezone(pytz.timezone('US/Eastern')).date()
-    prev_day = date + timedelta(days=-1)
-    try:
-        X = prep_prediction_data(date)
-        prediction = predict(X)
-        save_to_s3(date, prediction, "prediction.txt")
-    except Exception as e:
-        pass
-    prev_day_tempf = get_prev_day_max_tempf(prev_day)
-    save_to_s3(prev_day, prev_day_tempf, "max_temp.txt")
+    dates = [
+        datetime(2024, 10, 27),
+        datetime(2024, 10, 28),
+        datetime(2024, 10, 29),
+        datetime(2024, 10, 30),
+        datetime(2024, 10, 31),
+        datetime(2024, 11, 1),
+        datetime(2024, 11, 2),
+        datetime(2024, 11, 3),
+        datetime(2024, 11, 4),
+        datetime(2024, 11, 5),
+        datetime(2024, 11, 6),
+        datetime(2024, 11, 7),
+
+    ]
+    for dt in dates:
+        date = dt.date()
+        prev_day = date + timedelta(days=-1)
+        try:
+            X = prep_prediction_data(date)
+            prediction = predict(X)
+            # save_to_s3(date, prediction, "prediction.txt")
+        except Exception as e:
+            pass
+        prev_day_tempf = get_prev_day_max_tempf(prev_day)
+        print("############################################################")
+        print("############################################################")
+        print(date, prediction, prev_day_tempf)
+        print("############################################################")
+        print("############################################################")
+        # save_to_s3(prev_day, prev_day_tempf, "max_temp.txt")
 
 
-if __name__ == "__main__":
-    scheduler = BlockingScheduler(timezone='US/Eastern')
-    scheduler.add_job(main, 'cron', minute='0', hour='9', day='*', year='*', month='*')
-    scheduler.start()
+main()
