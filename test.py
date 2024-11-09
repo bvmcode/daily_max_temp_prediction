@@ -1,15 +1,17 @@
 from datetime import datetime, timedelta
 import pickle
-import pytz
+import psycopg2 as pg2
 import os
 import re
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
-from apscheduler.schedulers.blocking import BlockingScheduler
 import boto3
 from bs4 import BeautifulSoup
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 STATIONS = {
@@ -221,61 +223,67 @@ def save_to_s3(date, prediction, filename):
     s3.upload_file(filename, bucket, key)
     os.remove(filename)
 
-def get_prev_day_max_tempf(date, station="14", unit="F"):
-    station = f"KNJATCO{station}"
-    url = "https://api.weather.com/v2/pws/history/daily?stationId={station}&format=json&units=m&date={date}&apiKey={key}"
-    dt = date.strftime("%Y%m%d")
-    api_key = os.getenv("API_KEY")
-    url_date = url.format(station=station, date=dt, key=api_key)
-    session = get_session()
-    try:
-        resp = session.get(url_date, verify=False)
-        obs = resp.json()['observations']
-        session.close()
-    except Exception as e:
-        session.close()
-        return None
-    max_temp_c = int(obs[0]['metric']['tempHigh'])
-    if unit=="F":
-        return float(max_temp_c)*(9/5) + 32
+def get_prev_day_max_tempf(date):
+    host = os.getenv("DB_HOST")
+    username = os.getenv("DB_USER")
+    password = os.getenv("DB_PASS")
+    db = os.getenv("DB_NAME")
+    port = os.getenv("DB_PORT")
+    engine = pg2.connect(f"dbname='{db}' user='{username}' host='{host}' port='{port}' password='{password}'")
+    date1 = (date + timedelta(days=-1)).strftime("%Y-%m-%d")
+    date2 = (date + timedelta(days=1)).strftime("%Y-%m-%d")
+    query = f"""
+            SELECT api_datetime, temp_f
+            FROM public.weather
+            where cast(api_datetime as date) >= '{date1}'
+                 and cast(api_datetime as date) <= '{date2}'
+            order by api_datetime desc
+            """
+    df = pd.read_sql(query, con=engine)
+    df["date"] = df["api_datetime"].dt.tz_localize('UTC').dt.tz_convert('US/Eastern')
+    engine.close()
+    df = df[df['date'].dt.date == date]
+    return df.temp_f.max()
 
 def predict(data):
     with open(f'./artificats/{MODEL}.pkl', 'rb') as file:
         model = pickle.load(file)
     return model.predict(data)[0]*FACTOR
 
+
 def main():
     dates = [
         datetime(2024, 10, 27),
-        datetime(2024, 10, 28),
-        datetime(2024, 10, 29),
-        datetime(2024, 10, 30),
-        datetime(2024, 10, 31),
-        datetime(2024, 11, 1),
-        datetime(2024, 11, 2),
-        datetime(2024, 11, 3),
-        datetime(2024, 11, 4),
-        datetime(2024, 11, 5),
-        datetime(2024, 11, 6),
-        datetime(2024, 11, 7),
-
+        # datetime(2024, 10, 28),
+        # datetime(2024, 10, 29),
+        # datetime(2024, 10, 30),
+        # datetime(2024, 10, 31),
+        # datetime(2024, 11, 1),
+        # datetime(2024, 11, 2),
+        # datetime(2024, 11, 3),
+        # datetime(2024, 11, 4),
+        # datetime(2024, 11, 5),
+        # datetime(2024, 11, 6),
+        # datetime(2024, 11, 7),
+        # datetime(2024, 11, 8),
     ]
     for dt in dates:
         date = dt.date()
         prev_day = date + timedelta(days=-1)
-        try:
-            X = prep_prediction_data(date)
-            prediction = predict(X)
-            # save_to_s3(date, prediction, "prediction.txt")
-        except Exception as e:
-            pass
+        # try:
+        #     X = prep_prediction_data(date)
+        #     prediction = predict(X)
+        #     save_to_s3(date, prediction, "prediction.txt")
+        # except Exception as e:
+        #     pass
         prev_day_tempf = get_prev_day_max_tempf(prev_day)
-        print("############################################################")
-        print("############################################################")
-        print(date, prediction, prev_day_tempf)
-        print("############################################################")
-        print("############################################################")
-        # save_to_s3(prev_day, prev_day_tempf, "max_temp.txt")
+        print(prev_day_tempf)
+        # print("############################################################")
+        # print("############################################################")
+        # print(date, prediction, prev_day_tempf)
+        # print("############################################################")
+        # print("############################################################")
+        save_to_s3(prev_day, prev_day_tempf, "max_temp.txt")
 
 
 main()
