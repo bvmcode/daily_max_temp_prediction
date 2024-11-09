@@ -2,6 +2,7 @@ apscheduler
 beautifulsoup4
 boto3
 pandas
+psycopg2
 requests
 scikit-learn
 xgboost
