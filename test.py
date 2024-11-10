@@ -254,36 +254,30 @@ def predict(data):
 
 def main():
     dates = [
+        datetime(2024, 10, 21),
+        datetime(2024, 10, 22),
+        datetime(2024, 10, 23),
+        datetime(2024, 10, 24),
+        datetime(2024, 10, 25),
+        datetime(2024, 10, 26),
         datetime(2024, 10, 27),
-        # datetime(2024, 10, 28),
-        # datetime(2024, 10, 29),
-        # datetime(2024, 10, 30),
-        # datetime(2024, 10, 31),
-        # datetime(2024, 11, 1),
-        # datetime(2024, 11, 2),
-        # datetime(2024, 11, 3),
-        # datetime(2024, 11, 4),
-        # datetime(2024, 11, 5),
-        # datetime(2024, 11, 6),
-        # datetime(2024, 11, 7),
-        # datetime(2024, 11, 8),
     ]
     for dt in dates:
         date = dt.date()
         prev_day = date + timedelta(days=-1)
-        # try:
-        #     X = prep_prediction_data(date)
-        #     prediction = predict(X)
-        #     save_to_s3(date, prediction, "prediction.txt")
-        # except Exception as e:
-        #     pass
+        try:
+            X = prep_prediction_data(date)
+            prediction = predict(X)
+            save_to_s3(date, prediction, "prediction.txt")
+        except Exception as e:
+            pass
         prev_day_tempf = get_prev_day_max_tempf(prev_day)
         print(prev_day_tempf)
-        # print("############################################################")
-        # print("############################################################")
-        # print(date, prediction, prev_day_tempf)
-        # print("############################################################")
-        # print("############################################################")
+        print("############################################################")
+        print("############################################################")
+        print(date, prediction, prev_day_tempf)
+        print("############################################################")
+        print("############################################################")
         save_to_s3(prev_day, prev_day_tempf, "max_temp.txt")
 
 
