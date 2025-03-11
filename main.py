@@ -5,6 +5,7 @@ import psycopg2 as pg2
 import os
 import re
 import requests
+import sys
 from requests.adapters import HTTPAdapter, Retry
 
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -265,6 +266,10 @@ def main():
 
 
 if __name__ == "__main__":
-    scheduler = BlockingScheduler(timezone='US/Eastern')
-    scheduler.add_job(main, 'cron', minute='0', hour='9', day='*', year='*', month='*')
-    scheduler.start()
+    arg = sys.argv[1]
+    if arg == "schedule":
+        scheduler = BlockingScheduler(timezone='US/Eastern')
+        scheduler.add_job(main, 'cron', minute='0', hour='11', day='*', year='*', month='*')
+        scheduler.start()
+    else:
+        main()

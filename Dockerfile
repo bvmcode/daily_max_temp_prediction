@@ -20,4 +20,4 @@ RUN python3.12 -m pip install numpy --upgrade
 RUN python3.12 -m pip install --ignore-installed six
 RUN python3.12 -m pip install urllib3[secure]
 
-CMD ["python3.12", "-u", "main.py"]
+CMD ["python3.12", "-u", "main.py", "schedule"]

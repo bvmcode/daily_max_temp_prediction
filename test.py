@@ -31,7 +31,7 @@ FIELDS = ["pressure","height","temp","dew_point","rel_humidity",
 SOUNDING_HR = "12"
 URL_BASE="https://weather.uwyo.edu/cgi-bin/sounding"
 MODEL = "randomforest"
-FACTOR = .99
+FACTOR = 1
 PCA = False
 
 
@@ -138,6 +138,7 @@ def get_raw_data(date):
     for station in STATIONS:
         tmp_df = get_station_data(date, station)
         if tmp_df is None:
+            print(station)
             return None
         if df is None:
             df = tmp_df
@@ -254,13 +255,7 @@ def predict(data):
 
 def main():
     dates = [
-        datetime(2024, 10, 21),
-        datetime(2024, 10, 22),
-        datetime(2024, 10, 23),
-        datetime(2024, 10, 24),
-        datetime(2024, 10, 25),
-        datetime(2024, 10, 26),
-        datetime(2024, 10, 27),
+        datetime(2025, 1, 5),
     ]
     for dt in dates:
         date = dt.date()
@@ -268,9 +263,10 @@ def main():
         try:
             X = prep_prediction_data(date)
             prediction = predict(X)
-            save_to_s3(date, prediction, "prediction.txt")
+            #save_to_s3(date, prediction, "prediction.txt")
         except Exception as e:
-            pass
+            print(e)
+            break
         prev_day_tempf = get_prev_day_max_tempf(prev_day)
         print(prev_day_tempf)
         print("############################################################")
